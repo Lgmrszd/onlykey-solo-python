@@ -52,12 +52,9 @@ def update(serial, yes, local_firmware_server, alpha):
 
     except solo.exceptions.NoSoloFoundError:
         print()
-        print("No Solo key found!")
+        print("No key found!")
         print()
         print("If you are on Linux, are your udev rules up to date?")
-        print("Try adding a rule line such as the following:")
-        print('ATTRS{idVendor}=="0483", ATTRS{idProduct}=="a2ca", TAG+="uaccess"')
-        print("For more, see https://docs.solokeys.io/solo/udev/")
         print()
         sys.exit(1)
 
@@ -73,7 +70,6 @@ def update(serial, yes, local_firmware_server, alpha):
     except Exception:
         print()
         print("Unhandled error connecting to key.")
-        print("Please report via https://github.com/solokeys/solo-python/issues/")
         print()
         sys.exit(1)
 
