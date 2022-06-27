@@ -14,7 +14,7 @@ import pathlib
 
 from . import client, commands, dfu, helpers, operations
 
-__version__ = "0.0.31"
+__version__ = "0.0.32"
 
 
 del pathlib
