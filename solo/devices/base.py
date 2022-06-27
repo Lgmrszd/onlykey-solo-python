@@ -3,7 +3,9 @@ import struct
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from fido2.attestation import Attestation
-from fido2.ctap2 import CTAP2, CredentialManagement
+from fido2.server import Fido2Server
+from fido2.ctap2 import Ctap2, CredentialManagement
+from fido2.ctap2.pin import ClientPin, PinProtocol
 from fido2.hid import CTAPHID
 from fido2.utils import hmac_sha256
 from fido2.webauthn import PublicKeyCredentialCreationOptions
@@ -113,9 +115,15 @@ class SoloClient:
 
     def cred_mgmt(self, pin):
         client = self.get_current_fido_client()
-        token = client.client_pin.get_pin_token(pin)
-        ctap2 = CTAP2(self.get_current_hid_device())
-        return CredentialManagement(ctap2, client.client_pin.protocol, token)
+        server = Fido2Server({"id": "example.com", "name": "Example RP"})
+        request_options, state = server.authenticate_begin()
+        #token = client.client_pin.get_pin_token(pin)
+        #ctap2 = Ctap2(self.get_current_hid_device())
+        #return CredentialManagement(ctap2, client.client_pin.protocol, token)
+        options = dict(request_options["publicKey"])
+        options["extensions"] = {"largeBlob": {"read": True}}
+        return options
+
 
     def enter_solo_bootloader(
         self,
