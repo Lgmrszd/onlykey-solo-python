@@ -124,7 +124,6 @@ def feedkernel(count, serial):
     "--host", help="Relying party's host", default="solokeys.dev", show_default=True
 )
 @click.option("--user", help="User ID", default="they", show_default=True)
-@click.option("--pin", help="PIN", default=None)
 @click.option(
     "--udp", is_flag=True, default=False, help="Communicate over UDP with software key"
 )
@@ -134,19 +133,13 @@ def feedkernel(count, serial):
     default="Touch your authenticator to generate a credential...",
     show_default=True,
 )
-def make_credential(serial, host, user, udp, prompt, pin):
+def make_credential(serial, host, user, udp, prompt):
     """Generate a credential.
 
     Pass `--prompt ""` to output only the `credential_id` as hex.
     """
 
     import solo.hmac_secret
-
-    # check for PIN
-    if not pin:
-        pin = getpass.getpass("PIN (leave empty for no PIN): ")
-    if not pin:
-        pin = None
 
     solo.hmac_secret.make_credential(
         host=host,
@@ -155,7 +148,6 @@ def make_credential(serial, host, user, udp, prompt, pin):
         output=True,
         prompt=prompt,
         udp=udp,
-        pin=pin,
     )
 
 
@@ -163,7 +155,6 @@ def make_credential(serial, host, user, udp, prompt, pin):
 @click.option("-s", "--serial", help="Serial number of Solo use")
 @click.option("--host", help="Relying party's host", default="solokeys.dev")
 @click.option("--user", help="User ID", default="they")
-@click.option("--pin", help="PIN", default=None)
 @click.option(
     "--udp", is_flag=True, default=False, help="Communicate over UDP with software key"
 )
@@ -175,7 +166,7 @@ def make_credential(serial, host, user, udp, prompt, pin):
 )
 @click.argument("credential-id")
 @click.argument("challenge")
-def challenge_response(serial, host, user, prompt, credential_id, challenge, udp, pin):
+def challenge_response(serial, host, user, prompt, credential_id, challenge, udp):
     """Uses `hmac-secret` to implement a challenge-response mechanism.
 
     We abuse hmac-secret, which gives us `HMAC(K, hash(challenge))`, where `K`
@@ -192,11 +183,6 @@ def challenge_response(serial, host, user, prompt, credential_id, challenge, udp
 
     import solo.hmac_secret
 
-    # check for PIN
-    if not pin:
-        pin = getpass.getpass("PIN (leave empty for no PIN): ")
-    if not pin:
-        pin = None
 
     solo.hmac_secret.simple_secret(
         credential_id,
@@ -207,7 +193,6 @@ def challenge_response(serial, host, user, prompt, credential_id, challenge, udp
         prompt=prompt,
         output=True,
         udp=udp,
-        pin=pin,
     )
 
 
@@ -234,10 +219,10 @@ def probe(serial, udp, hash_type, filename):
     p = solo.client.find(serial, udp=udp)
     import fido2
 
-    serialized_command = fido2.cbor.dumps({"subcommand": hash_type, "data": data})
+    serialized_command = fido2.cbor.encode({"subcommand": hash_type, "data": data})
     from solo.commands import SoloBootloader
 
-    result = p.send_data_hid(SoloBootloader.HIDCommandProbe, serialized_command)
+    result = p.send_data_hid(SoloBootloader.CommandProbe, serialized_command)
     result_hex = result.hex()
     print(result_hex)
     if hash_type == "Ed25519":
@@ -339,28 +324,20 @@ def set_pin(serial):
 
 
 @click.command()
-@click.option("--pin", help="PIN for to access key")
 @click.option("-s", "--serial", help="Serial number of Solo to use")
 @click.option(
     "--udp", is_flag=True, default=False, help="Communicate over UDP with software key"
 )
-def verify(pin, serial, udp):
+def verify(serial, udp):
     """Verify key is valid"""
 
     key = solo.client.find(serial, udp=udp)
 
-    if (
-        key.client
-        and ("clientPin" in key.client.info.options)
-        and key.client.info.options["clientPin"]
-        and not pin
-    ):
-        pin = getpass.getpass("PIN: ")
 
     # Any longer and this needs to go in a submodule
     print("Please press the button on your Solo key")
     try:
-        cert = key.make_credential(pin=pin)
+        cert = key.make_credential()
     except Fido2ClientError as e:
         cause = str(e.cause)
         if "PIN required" in cause:

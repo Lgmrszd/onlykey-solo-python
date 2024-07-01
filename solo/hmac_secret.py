@@ -21,7 +21,6 @@ def make_credential(
     host="solokeys.dev",
     user_id="they",
     serial=None,
-    pin=None,
     prompt="Touch your authenticator to generate a credential...",
     output=True,
     udp=False,
@@ -66,7 +65,6 @@ def simple_secret(
     host="solokeys.dev",
     user_id="they",
     serial=None,
-    pin=None,
     prompt="Touch your authenticator to generate a response...",
     output=True,
     udp=False,
@@ -100,7 +98,6 @@ def simple_secret(
             "allowCredentials": allow_list,
             "extensions": {"hmacGetSecret": {"salt1": salt}},
         },
-        pin=pin,
     ).get_response(0)
 
     output = assertion.extension_results["hmacGetSecret"]["output1"]
